@@ -52,10 +52,18 @@ const formatWeekLabel = (offset) => {
 // ── DATA LAYER ─────────────────────────────────────────────────────────────────
 async function fetchLogs() {
   try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=get`);
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=get`, {
+      method: "GET",
+      redirect: "follow",
+    });
     const data = await res.json();
-    return data.logs || [];
-  } catch {
+    if (data.logs) {
+      localStorage.setItem("vde-logs-v1", JSON.stringify(data.logs));
+      return data.logs;
+    }
+    throw new Error("No logs in response");
+  } catch (e) {
+    console.warn("Falling back to localStorage:", e);
     const raw = localStorage.getItem("vde-logs-v1");
     return raw ? JSON.parse(raw) : [];
   }
