@@ -248,7 +248,8 @@ function LogForm({ onSubmit }) {
       </div>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Video Count {req}</p>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">Video Count {req}</p>
+        <p className="text-xs text-zinc-500 italic mb-4">Please place how many videos were completed in total. From that total, how many were on time and how many needed to be completed for OT.</p>
         <div className="grid grid-cols-3 gap-3">
           {[["Total", "totalVideos"], ["On-Time", "onTime"], ["OT", "overtime"]].map(([label, key]) => (
             <div key={key}>
