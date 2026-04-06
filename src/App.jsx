@@ -6,8 +6,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV
 const TEAMS = {
   "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Rog"],
   "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joma"],
-  "Team Emil":    ["Vermil", "Raphael", "Arjel", "Nino", "Emil"],
-  "Team Emman":   ["Ryand", "Darell", "Jaycee", "Jayve", "Emman"],
+  "Team Emil":    ["Vermil", "Arjel", "Rye", "Jaycee", "Emil"],
+  "Team Emman":   ["Darell", "Raph", "Nino", "Jayve", "Emman"],
   "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Patrick"],
 };
 
@@ -261,9 +261,9 @@ function LogForm({ onSubmit }) {
       </Card>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Time of Day {req}</p>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Time of Day Videos Completed {req}</p>
         <div className="grid grid-cols-2 gap-3">
-          {[["Before Noon", "beforeNoon"], ["After Noon", "afterNoon"]].map(([label, key]) => (
+          {[["First Half of Shift", "beforeNoon"], ["Second Half of Shift", "afterNoon"]].map(([label, key]) => (
             <div key={key}>
               <label className={lbl}>{label}</label>
               <input type="number" min="0" max="20" placeholder="0" className={inp}
