@@ -155,7 +155,7 @@ function LogForm({ onSubmit }) {
     if (!form.date) return "Date is required.";
     if (form.totalVideos === "") return "Total videos is required.";
     if (form.onTime === "") return "On-time count is required.";
-    if (form.overtime === "") return "OT count is required.";
+    if (form.overtime === "" || form.overtime === null || form.overtime === undefined) return "OT count is required.";
     if (form.beforeNoon === "") return "Before noon count is required.";
     if (form.afterNoon === "") return "After noon count is required.";
     if (form.blockers.length === 0) return "Please select at least one blocker (or None if no blockers).";
@@ -255,7 +255,7 @@ function LogForm({ onSubmit }) {
             <div key={key}>
               <label className={lbl}>{label}</label>
               <input type="number" min="0" max="20" placeholder="0" className={inp}
-                value={form[key]} onChange={(e) => set(key, e.target.value)} />
+                value={form[key]} onChange={(e) => set(key, e.target.value === "" ? "" : e.target.value)} />
             </div>
           ))}
         </div>
