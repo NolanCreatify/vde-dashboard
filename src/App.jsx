@@ -123,12 +123,11 @@ const Stat = ({ label, value, sub, accent = false }) => (
 function LogForm({ onSubmit }) {
   const [form, setForm] = useState({
     team: "", vde: "", date: today(),
-    totalVideos: "", onTime: "", overtime: "",
+    totalVideos: "", onTime: "", overtime: "0",
     beforeNoon: "", afterNoon: "",
     blockers: [], otherBlocker: "", wins: "",
   });
-  const [screenshot, setScreenshot] = useState(null);
-  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [screenshots, setScreenshots] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -140,13 +139,18 @@ function LogForm({ onSubmit }) {
       ? form.blockers.filter((x) => x !== b)
       : [...form.blockers, b]);
 
-  const handleScreenshot = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setScreenshot(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setScreenshotPreview(ev.target.result);
-    reader.readAsDataURL(file);
+  const handleScreenshots = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    Promise.all(files.map(file => new Promise((res) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => res({ file, preview: ev.target.result });
+      reader.readAsDataURL(file);
+    }))).then(results => setScreenshots(prev => [...prev, ...results]));
+  };
+
+  const removeScreenshot = (index) => {
+    setScreenshots(prev => prev.filter((_, i) => i !== index));
   };
 
   const validate = () => {
@@ -160,7 +164,7 @@ function LogForm({ onSubmit }) {
     if (form.afterNoon === "") return "After noon count is required.";
     if (form.blockers.length === 0) return "Please select at least one blocker (or None if no blockers).";
     if (!form.wins.trim()) return "Wins / Learnings is required.";
-    if (!screenshot) return "CapCut project screenshot is required.";
+    if (screenshots.length === 0) return "At least one CapCut project screenshot is required.";
     const t = parseInt(form.totalVideos);
     if ((parseInt(form.beforeNoon) + parseInt(form.afterNoon)) > t)
       return "Before + after noon can't exceed total videos.";
@@ -181,18 +185,19 @@ function LogForm({ onSubmit }) {
       overtime: parseInt(form.overtime) || 0,
       beforeNoon: parseInt(form.beforeNoon) || 0,
       afterNoon: parseInt(form.afterNoon) || 0,
-      screenshotName: screenshot?.name || "",
+      screenshotName: screenshots.map(s => s.file.name).join("|"),
       submittedAt: new Date().toISOString(),
     };
-    // Upload screenshot as base64
-    if (screenshot) {
-      const base64 = await new Promise((res) => {
-        const reader = new FileReader();
-        reader.onload = (e) => res(e.target.result.split(",")[1]);
-        reader.readAsDataURL(screenshot);
-      });
-      entry.screenshotBase64 = base64;
-      entry.screenshotType = screenshot.type;
+    // Upload screenshots as base64 array
+    if (screenshots.length > 0) {
+      entry.screenshotsData = await Promise.all(screenshots.map(async (s) => {
+        const base64 = await new Promise((res) => {
+          const reader = new FileReader();
+          reader.onload = (e) => res(e.target.result.split(",")[1]);
+          reader.readAsDataURL(s.file);
+        });
+        return { base64, type: s.file.type, name: s.file.name };
+      }));
     }
     await onSubmit(entry);
     setSaving(false);
@@ -201,9 +206,8 @@ function LogForm({ onSubmit }) {
 
   const resetForm = () => {
     setSubmitted(false);
-    setScreenshot(null);
-    setScreenshotPreview(null);
-    setForm({ team: "", vde: "", date: today(), totalVideos: "", onTime: "", overtime: "", beforeNoon: "", afterNoon: "", blockers: [], otherBlocker: "", wins: "" });
+    setScreenshots([]);
+    setForm({ team: "", vde: "", date: today(), totalVideos: "", onTime: "", overtime: "0", beforeNoon: "", afterNoon: "", blockers: [], otherBlocker: "", wins: "" });
   };
 
   if (submitted) {
@@ -309,27 +313,25 @@ function LogForm({ onSubmit }) {
       </Card>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshot {req}</p>
-        <p className="text-xs text-zinc-600 mb-4">Upload a screenshot of your uploaded CapCut project file.</p>
-        <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${screenshot ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-700 hover:border-zinc-500"}`}>
-          {screenshotPreview ? (
-            <img src={screenshotPreview} alt="Preview" className="max-h-40 rounded-lg object-contain" />
-          ) : (
-            <>
-              <span className="text-2xl">📸</span>
-              <span className="text-xs text-zinc-400">Tap to upload screenshot</span>
-              <span className="text-xs text-zinc-600">JPG, PNG supported</span>
-            </>
-          )}
-          <input type="file" accept="image/*" className="hidden" onChange={handleScreenshot} />
-        </label>
-        {screenshot && (
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-emerald-400">{screenshot.name}</span>
-            <button onClick={() => { setScreenshot(null); setScreenshotPreview(null); }}
-              className="text-xs text-zinc-500 hover:text-red-400 transition-colors">Remove</button>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshots {req}</p>
+        <p className="text-xs text-zinc-600 mb-4">Upload one or more screenshots of your uploaded CapCut project files.</p>
+        {screenshots.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {screenshots.map((s, i) => (
+              <div key={i} className="relative rounded-lg overflow-hidden border border-zinc-700">
+                <img src={s.preview} alt={s.file.name} className="w-full h-24 object-cover" />
+                <button onClick={() => removeScreenshot(i)}
+                  className="absolute top-1 right-1 bg-black/70 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 transition-colors">×</button>
+              </div>
+            ))}
           </div>
         )}
+        <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-4 cursor-pointer transition-all">
+          <span className="text-2xl">📸</span>
+          <span className="text-xs text-zinc-400">{screenshots.length > 0 ? "Add more screenshots" : "Tap to upload screenshots"}</span>
+          <span className="text-xs text-zinc-600">JPG, PNG — select multiple at once</span>
+          <input type="file" accept="image/*" multiple className="hidden" onChange={handleScreenshots} />
+        </label>
       </Card>
 
       {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-800 rounded-lg py-3 px-4">{error}</p>}
