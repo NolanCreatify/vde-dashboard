@@ -253,7 +253,11 @@ function LogForm({ onSubmit }) {
 
       <Card>
         <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">Video Count {req}</p>
-        <p className="text-xs text-zinc-500 italic mb-4">Please place how many videos were completed in total. From that total, how many were on time and how many needed to be completed for OT.</p>
+        <p className="text-xs text-zinc-500 italic mb-2">Please place how many videos were completed in total. From that total, how many were on time and how many needed to be completed for OT.</p>
+        <div className="flex items-start gap-2 bg-amber-900/30 border border-amber-700 rounded-lg px-3 py-2 mb-4">
+          <span className="text-amber-400 text-sm mt-0.5">⚠️</span>
+          <p className="text-xs text-amber-300 leading-relaxed"><span className="font-bold">Do not include revisions in your total.</span> Revisions are not counted as new videos. Only count freshly completed videos.</p>
+        </div>
         <div className="grid grid-cols-3 gap-3">
           {[["Total", "totalVideos"], ["On-Time", "onTime"], ["OT", "overtime"]].map(([label, key]) => (
             <div key={key}>
