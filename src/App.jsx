@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV1ZuY4pwCdXNUYcej5Sag7s90K7uyoKiSXH9cqL9kC6o1YMOg9z_X6g/exec";
 
 const TEAMS = {
-  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joma"],
+  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Rog"],
+  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Joma"],
   "Team Emil":    ["Vermil", "Arjel", "Rye", "Jaycee", "Emil"],
   "Team Emman":   ["Darell", "Raph", "Nino", "Jayve", "Emman"],
-  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Patrick"],
+  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Patrick"],
 };
 
 const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick"];
