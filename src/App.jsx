@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV1ZuY4pwCdXNUYcej5Sag7s90K7uyoKiSXH9cqL9kC6o1YMOg9z_X6g/exec";
 
 const TEAMS = {
-  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joma"],
+  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Rog"],
+  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Joma"],
   "Team Emil":    ["Vermil", "Raphael", "Arjel", "Nino", "Emil"],
   "Team Emman":   ["Ryand", "Darell", "Jaycee", "Jayve", "Emman"],
-  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Patrick"],
+  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Patrick"],
 };
 
 const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick"];
@@ -152,8 +152,8 @@ function LogForm({ onSubmit }) {
     beforeNoon: "", afterNoon: "",
     blockers: [], otherBlocker: "", wins: "",
   });
-  const [screenshot, setScreenshot] = useState(null);
-  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [screenshots, setScreenshots] = useState([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -166,12 +166,20 @@ function LogForm({ onSubmit }) {
       : [...form.blockers, b]);
 
   const handleScreenshot = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setScreenshot(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setScreenshotPreview(ev.target.result);
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setScreenshots((prev) => [...prev, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setScreenshotPreviews((prev) => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeScreenshot = (idx) => {
+    setScreenshots((prev) => prev.filter((_, i) => i !== idx));
+    setScreenshotPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const validate = () => {
@@ -186,7 +194,7 @@ function LogForm({ onSubmit }) {
     if (form.afterNoon === "") return "After noon count is required.";
     if (form.blockers.length === 0) return "Please select at least one blocker (or None if no blockers).";
     if (!form.wins.trim()) return "Wins / Learnings is required.";
-    if (!screenshot) return "CapCut project screenshot is required.";
+    if (!screenshots.length) return "At least one CapCut project screenshot is required.";
     const t = parseInt(form.totalVideos);
     if ((parseInt(form.beforeNoon) + parseInt(form.afterNoon)) > t)
       return "Before + after noon can't exceed total videos.";
@@ -208,18 +216,17 @@ function LogForm({ onSubmit }) {
       revisions: parseInt(form.revisions) || 0,
       beforeNoon: parseInt(form.beforeNoon) || 0,
       afterNoon: parseInt(form.afterNoon) || 0,
-      screenshotName: screenshot?.name || "",
+      screenshotNames: screenshots.map((s) => s.name).join("|"),
       submittedAt: new Date().toISOString(),
     };
-    // Upload screenshot as base64
-    if (screenshot) {
-      const base64 = await new Promise((res) => {
+    // Upload screenshots as base64 (array of files)
+    if (screenshots.length) {
+      const encoded = await Promise.all(screenshots.map((f) => new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = (e) => res(e.target.result.split(",")[1]);
-        reader.readAsDataURL(screenshot);
-      });
-      entry.screenshotBase64 = base64;
-      entry.screenshotType = screenshot.type;
+        reader.onload = () => resolve({ base64: reader.result.split(",")[1], type: f.type, name: f.name });
+        reader.readAsDataURL(f);
+      })));
+      entry.screenshotsBase64 = encoded;
     }
     await onSubmit(entry);
     setSaving(false);
@@ -228,8 +235,8 @@ function LogForm({ onSubmit }) {
 
   const resetForm = () => {
     setSubmitted(false);
-    setScreenshot(null);
-    setScreenshotPreview(null);
+    setScreenshots([]);
+    setScreenshotPreviews([]);
     setForm({ team: "", vde: "", date: today(), totalVideos: "", onTime: "", overtime: "", revisions: "", beforeNoon: "", afterNoon: "", blockers: [], otherBlocker: "", wins: "" });
   };
 
@@ -348,27 +355,24 @@ function LogForm({ onSubmit }) {
       </Card>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshot {req}</p>
-        <p className="text-xs text-zinc-600 mb-4">Upload a screenshot of your uploaded CapCut project file.</p>
-        <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${screenshot ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-700 hover:border-zinc-500"}`}>
-          {screenshotPreview ? (
-            <img src={screenshotPreview} alt="Preview" className="max-h-40 rounded-lg object-contain" />
-          ) : (
-            <>
-              <span className="text-2xl">📸</span>
-              <span className="text-xs text-zinc-400">Tap to upload screenshot</span>
-              <span className="text-xs text-zinc-600">JPG, PNG supported</span>
-            </>
-          )}
-          <input type="file" accept="image/*" className="hidden" onChange={handleScreenshot} />
-        </label>
-        {screenshot && (
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-emerald-400">{screenshot.name}</span>
-            <button onClick={() => { setScreenshot(null); setScreenshotPreview(null); }}
-              className="text-xs text-zinc-500 hover:text-red-400 transition-colors">Remove</button>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshots {req}</p>
+        <p className="text-xs text-zinc-600 mb-4">Upload one or more screenshots of your uploaded CapCut project file(s).</p>
+        {screenshotPreviews.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+            {screenshotPreviews.map((previewSrc, i) => (
+              <div key={i} className="relative group">
+                <img src={previewSrc} alt={`Preview ${i + 1}`} className="w-full h-24 object-cover rounded-lg border border-zinc-700" />
+                <button type="button" onClick={() => removeScreenshot(i)}
+                  className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow">×</button>
+              </div>
+            ))}
           </div>
         )}
+        <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${screenshots.length ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-700 hover:border-zinc-500"}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" /></svg>
+          <span className="text-xs text-zinc-400">{screenshots.length ? `Tap to add more (${screenshots.length} selected)` : "Tap to upload screenshot(s)"}</span>
+          <input type="file" accept="image/*" multiple className="hidden" onChange={handleScreenshot} />
+        </label>
       </Card>
 
       {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-800 rounded-lg py-3 px-4">{error}</p>}
