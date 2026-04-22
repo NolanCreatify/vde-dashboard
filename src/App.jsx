@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV1ZuY4pwCdXNUYcej5Sag7s90K7uyoKiSXH9cqL9kC6o1YMOg9z_X6g/exec";
 
 const TEAMS = {
-  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Joma"],
-  "Team Emil":    ["Vermil", "Arjel", "Rye", "Jaycee", "Emil"],
-  "Team Emman":   ["Darell", "Raph", "Nino", "Jayve", "Emman"],
-  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Patrick"],
+  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Rog"],
+  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joma"],
+  "Team Emil":    ["Vermil", "Raphael", "Arjel", "Nino", "Emil"],
+  "Team Emman":   ["Ryand", "Darell", "Jaycee", "Jayve", "Emman"],
+  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Patrick"],
 };
 
 const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick"];
@@ -62,6 +62,7 @@ async function fetchLogs() {
         totalVideos: Number(l.totalVideos) || 0,
         onTime: Number(l.onTime) || 0,
         overtime: Number(l.overtime) || 0,
+        revisions: Number(l.revisions) || 0,
         beforeNoon: Number(l.beforeNoon) || 0,
         afterNoon: Number(l.afterNoon) || 0,
         blockers: Array.isArray(l.blockers) ? l.blockers : (l.blockers ? l.blockers.split("|") : []),
@@ -103,6 +104,7 @@ const Tag = ({ children, color = "green" }) => {
     red:    "bg-red-900/60 text-red-300 border-red-700",
     blue:   "bg-sky-900/60 text-sky-300 border-sky-700",
     gray:   "bg-zinc-800 text-zinc-400 border-zinc-700",
+    amber:  "bg-amber-900/60 text-amber-300 border-amber-700",
   };
   return <span className={`text-xs px-2 py-0.5 rounded border font-mono ${p[color]}`}>{children}</span>;
 };
@@ -111,11 +113,33 @@ const Card = ({ children, className = "" }) => (
   <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-5 ${className}`}>{children}</div>
 );
 
-const Stat = ({ label, value, sub, accent = false }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="text-xs text-zinc-500 uppercase tracking-widest">{label}</span>
-    <span className={`text-2xl font-black font-mono ${accent ? "text-emerald-400" : "text-white"}`}>{value}</span>
-    {sub && <span className="text-xs text-zinc-500">{sub}</span>}
+const Stat = ({ label, value, sub, accent = false, color = "emerald" }) => {
+  const colors = {
+    emerald: "text-emerald-400",
+    amber:   "text-amber-400",
+    white:   "text-white",
+  };
+  const valueColor = accent ? colors[color] || colors.emerald : colors.white;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-zinc-500 uppercase tracking-widest">{label}</span>
+      <span className={`text-2xl font-black font-mono ${valueColor}`}>{value}</span>
+      {sub && <span className="text-xs text-zinc-500">{sub}</span>}
+    </div>
+  );
+};
+
+// Wraps any element with a small "NEW" badge in the top-right corner.
+// Used to flag recently-added features so the team notices them.
+const NewBadge = ({ children, className = "" }) => (
+  <div className={`relative ${className}`}>
+    <span
+      className="absolute -top-2 -right-2 z-10 bg-amber-500 text-black text-[9px] font-black tracking-widest px-1.5 py-0.5 rounded-md"
+      style={{ boxShadow: "0 0 0 3px #09090b" }}
+    >
+      NEW
+    </span>
+    {children}
   </div>
 );
 
@@ -123,11 +147,13 @@ const Stat = ({ label, value, sub, accent = false }) => (
 function LogForm({ onSubmit }) {
   const [form, setForm] = useState({
     team: "", vde: "", date: today(),
-    totalVideos: "", onTime: "", overtime: "0",
+    totalVideos: "", onTime: "", overtime: "",
+    revisions: "",
     beforeNoon: "", afterNoon: "",
     blockers: [], otherBlocker: "", wins: "",
   });
-  const [screenshots, setScreenshots] = useState([]);
+  const [screenshot, setScreenshot] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -139,18 +165,13 @@ function LogForm({ onSubmit }) {
       ? form.blockers.filter((x) => x !== b)
       : [...form.blockers, b]);
 
-  const handleScreenshots = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    Promise.all(files.map(file => new Promise((res) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => res({ file, preview: ev.target.result });
-      reader.readAsDataURL(file);
-    }))).then(results => setScreenshots(prev => [...prev, ...results]));
-  };
-
-  const removeScreenshot = (index) => {
-    setScreenshots(prev => prev.filter((_, i) => i !== index));
+  const handleScreenshot = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setScreenshot(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setScreenshotPreview(ev.target.result);
+    reader.readAsDataURL(file);
   };
 
   const validate = () => {
@@ -159,12 +180,13 @@ function LogForm({ onSubmit }) {
     if (!form.date) return "Date is required.";
     if (form.totalVideos === "") return "Total videos is required.";
     if (form.onTime === "") return "On-time count is required.";
-    if (form.overtime === "" || form.overtime === null || form.overtime === undefined) return "OT count is required.";
+    if (form.overtime === "") return "OT count is required.";
+    if (form.revisions === "") return "Revisions count is required (enter 0 if none).";
     if (form.beforeNoon === "") return "Before noon count is required.";
     if (form.afterNoon === "") return "After noon count is required.";
     if (form.blockers.length === 0) return "Please select at least one blocker (or None if no blockers).";
     if (!form.wins.trim()) return "Wins / Learnings is required.";
-    if (screenshots.length === 0) return "At least one CapCut project screenshot is required.";
+    if (!screenshot) return "CapCut project screenshot is required.";
     const t = parseInt(form.totalVideos);
     if ((parseInt(form.beforeNoon) + parseInt(form.afterNoon)) > t)
       return "Before + after noon can't exceed total videos.";
@@ -183,21 +205,21 @@ function LogForm({ onSubmit }) {
       totalVideos: parseInt(form.totalVideos) || 0,
       onTime: parseInt(form.onTime) || 0,
       overtime: parseInt(form.overtime) || 0,
+      revisions: parseInt(form.revisions) || 0,
       beforeNoon: parseInt(form.beforeNoon) || 0,
       afterNoon: parseInt(form.afterNoon) || 0,
-      screenshotName: screenshots.map(s => s.file.name).join("|"),
+      screenshotName: screenshot?.name || "",
       submittedAt: new Date().toISOString(),
     };
-    // Upload screenshots as base64 array
-    if (screenshots.length > 0) {
-      entry.screenshotsData = await Promise.all(screenshots.map(async (s) => {
-        const base64 = await new Promise((res) => {
-          const reader = new FileReader();
-          reader.onload = (e) => res(e.target.result.split(",")[1]);
-          reader.readAsDataURL(s.file);
-        });
-        return { base64, type: s.file.type, name: s.file.name };
-      }));
+    // Upload screenshot as base64
+    if (screenshot) {
+      const base64 = await new Promise((res) => {
+        const reader = new FileReader();
+        reader.onload = (e) => res(e.target.result.split(",")[1]);
+        reader.readAsDataURL(screenshot);
+      });
+      entry.screenshotBase64 = base64;
+      entry.screenshotType = screenshot.type;
     }
     await onSubmit(entry);
     setSaving(false);
@@ -206,8 +228,9 @@ function LogForm({ onSubmit }) {
 
   const resetForm = () => {
     setSubmitted(false);
-    setScreenshots([]);
-    setForm({ team: "", vde: "", date: today(), totalVideos: "", onTime: "", overtime: "0", beforeNoon: "", afterNoon: "", blockers: [], otherBlocker: "", wins: "" });
+    setScreenshot(null);
+    setScreenshotPreview(null);
+    setForm({ team: "", vde: "", date: today(), totalVideos: "", onTime: "", overtime: "", revisions: "", beforeNoon: "", afterNoon: "", blockers: [], otherBlocker: "", wins: "" });
   };
 
   if (submitted) {
@@ -252,27 +275,35 @@ function LogForm({ onSubmit }) {
       </div>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">Video Count {req}</p>
-        <p className="text-xs text-zinc-500 italic mb-2">Please place how many videos were completed in total. From that total, how many were on time and how many needed to be completed for OT.</p>
-        <div className="flex items-start gap-2 bg-amber-900/30 border border-amber-700 rounded-lg px-3 py-2 mb-4">
-          <span className="text-amber-400 text-sm mt-0.5">⚠️</span>
-          <p className="text-xs text-amber-300 leading-relaxed"><span className="font-bold">Do not include revisions in your total.</span> Revisions are not counted as new videos. Only count freshly completed videos.</p>
-        </div>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">New Videos {req}</p>
         <div className="grid grid-cols-3 gap-3">
           {[["Total", "totalVideos"], ["On-Time", "onTime"], ["OT", "overtime"]].map(([label, key]) => (
             <div key={key}>
               <label className={lbl}>{label}</label>
               <input type="number" min="0" max="20" placeholder="0" className={inp}
-                value={form[key]} onChange={(e) => set(key, e.target.value === "" ? "" : e.target.value)} />
+                value={form[key]} onChange={(e) => set(key, e.target.value)} />
             </div>
           ))}
         </div>
       </Card>
 
+      <NewBadge>
+        <div className="bg-zinc-900 border border-amber-700/40 rounded-xl p-5">
+          <p className="text-xs text-amber-300 uppercase tracking-widest mb-1">Revisions Today {req}</p>
+          <p className="text-xs text-zinc-600 mb-4">Count of revision tasks completed. Tracked separately from new videos. Enter 0 if none.</p>
+          <div>
+            <label className={lbl}>Revisions</label>
+            <input type="number" min="0" max="50" placeholder="0"
+              className="w-full bg-zinc-800 border border-amber-700/50 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+              value={form.revisions} onChange={(e) => set("revisions", e.target.value)} />
+          </div>
+        </div>
+      </NewBadge>
+
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Time of Day Videos Completed {req}</p>
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Time of Day {req}</p>
         <div className="grid grid-cols-2 gap-3">
-          {[["First Half of Shift", "beforeNoon"], ["Second Half of Shift", "afterNoon"]].map(([label, key]) => (
+          {[["Before Noon", "beforeNoon"], ["After Noon", "afterNoon"]].map(([label, key]) => (
             <div key={key}>
               <label className={lbl}>{label}</label>
               <input type="number" min="0" max="20" placeholder="0" className={inp}
@@ -317,25 +348,27 @@ function LogForm({ onSubmit }) {
       </Card>
 
       <Card>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshots {req}</p>
-        <p className="text-xs text-zinc-600 mb-4">Upload one or more screenshots of your uploaded CapCut project files.</p>
-        {screenshots.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            {screenshots.map((s, i) => (
-              <div key={i} className="relative rounded-lg overflow-hidden border border-zinc-700">
-                <img src={s.preview} alt={s.file.name} className="w-full h-24 object-cover" />
-                <button onClick={() => removeScreenshot(i)}
-                  className="absolute top-1 right-1 bg-black/70 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 transition-colors">×</button>
-              </div>
-            ))}
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">CapCut Project Screenshot {req}</p>
+        <p className="text-xs text-zinc-600 mb-4">Upload a screenshot of your uploaded CapCut project file.</p>
+        <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${screenshot ? "border-emerald-600 bg-emerald-900/20" : "border-zinc-700 hover:border-zinc-500"}`}>
+          {screenshotPreview ? (
+            <img src={screenshotPreview} alt="Preview" className="max-h-40 rounded-lg object-contain" />
+          ) : (
+            <>
+              <span className="text-2xl">📸</span>
+              <span className="text-xs text-zinc-400">Tap to upload screenshot</span>
+              <span className="text-xs text-zinc-600">JPG, PNG supported</span>
+            </>
+          )}
+          <input type="file" accept="image/*" className="hidden" onChange={handleScreenshot} />
+        </label>
+        {screenshot && (
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-emerald-400">{screenshot.name}</span>
+            <button onClick={() => { setScreenshot(null); setScreenshotPreview(null); }}
+              className="text-xs text-zinc-500 hover:text-red-400 transition-colors">Remove</button>
           </div>
         )}
-        <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-4 cursor-pointer transition-all">
-          <span className="text-2xl">📸</span>
-          <span className="text-xs text-zinc-400">{screenshots.length > 0 ? "Add more screenshots" : "Tap to upload screenshots"}</span>
-          <span className="text-xs text-zinc-600">JPG, PNG — select multiple at once</span>
-          <input type="file" accept="image/*" multiple className="hidden" onChange={handleScreenshots} />
-        </label>
       </Card>
 
       {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-800 rounded-lg py-3 px-4">{error}</p>}
@@ -366,19 +399,21 @@ function Dashboard({ logs, onRefresh, loading, weekOffset, setWeekOffset }) {
     const total = set.reduce((s, l) => s + l.totalVideos, 0);
     const onTime = set.reduce((s, l) => s + l.onTime, 0);
     const ot = set.reduce((s, l) => s + l.overtime, 0);
+    const revisions = set.reduce((s, l) => s + (l.revisions || 0), 0);
     const bn = set.reduce((s, l) => s + l.beforeNoon, 0);
     const an = set.reduce((s, l) => s + l.afterNoon, 0);
     const uniqueVDEs = new Set(set.map((l) => l.vde)).size;
-    return { total, onTime, ot, bn, an, avgPerVDE: uniqueVDEs ? (total / uniqueVDEs).toFixed(1) : "0.0" };
+    return { total, onTime, ot, revisions, bn, an, avgPerVDE: uniqueVDEs ? (total / uniqueVDEs).toFixed(1) : "0.0" };
   };
 
   const byMember = (set) => {
     const map = {};
     for (const l of set) {
-      if (!map[l.vde]) map[l.vde] = { total: 0, onTime: 0, overtime: 0, beforeNoon: 0, afterNoon: 0, days: 0, blockers: [], team: l.team };
+      if (!map[l.vde]) map[l.vde] = { total: 0, onTime: 0, overtime: 0, revisions: 0, beforeNoon: 0, afterNoon: 0, days: 0, blockers: [], team: l.team };
       map[l.vde].total += l.totalVideos;
       map[l.vde].onTime += l.onTime;
       map[l.vde].overtime += l.overtime;
+      map[l.vde].revisions += (l.revisions || 0);
       map[l.vde].beforeNoon += l.beforeNoon;
       map[l.vde].afterNoon += l.afterNoon;
       map[l.vde].days += 1;
@@ -418,44 +453,64 @@ function Dashboard({ logs, onRefresh, loading, weekOffset, setWeekOffset }) {
     const memberData = byMember(todayLogs);
     return (
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card><Stat label="Total Videos" value={stats.total} accent /></Card>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <Card><Stat label="New Videos" value={stats.total} accent /></Card>
           <Card><Stat label="Avg / VDE" value={stats.avgPerVDE} sub="target: 4.0" accent={parseFloat(stats.avgPerVDE) >= 4} /></Card>
+          <NewBadge>
+            <div className="bg-zinc-900 border border-amber-700/40 rounded-xl p-5">
+              <Stat label="Revisions" value={stats.revisions} sub="all teams" accent color="amber" />
+            </div>
+          </NewBadge>
           <Card><Stat label="On-Time" value={stats.onTime} sub={stats.total ? `${Math.round(stats.onTime / stats.total * 100)}%` : "—"} /></Card>
           <Card><Stat label="OT Videos" value={stats.ot} /></Card>
         </div>
 
-        {(teamFilter === "All Teams" ? Object.keys(TEAMS) : [teamFilter]).map((teamName) => (
-          <Card key={teamName}>
-            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-3">{teamName}</p>
-            {TEAMS[teamName].map((name) => {
-              const d = memberData[name];
-              const isLead = TEAM_LEADS.includes(name);
-              if (!d) return (
-                <div key={name} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm ${isLead ? "text-emerald-400 font-bold" : "text-zinc-500"}`}>{name}</span>
-                    {isLead && <Tag color="blue">Lead</Tag>}
+        {(teamFilter === "All Teams" ? Object.keys(TEAMS) : [teamFilter]).map((teamName) => {
+          const teamVideoTotal = TEAMS[teamName].reduce((s, n) => s + (memberData[n]?.total || 0), 0);
+          const teamRevTotal = TEAMS[teamName].reduce((s, n) => s + (memberData[n]?.revisions || 0), 0);
+          return (
+            <Card key={teamName}>
+              <p className="text-xs text-zinc-400 uppercase tracking-widest mb-3">{teamName}</p>
+              {TEAMS[teamName].map((name) => {
+                const d = memberData[name];
+                const isLead = TEAM_LEADS.includes(name);
+                if (!d) return (
+                  <div key={name} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${isLead ? "text-emerald-400 font-bold" : "text-zinc-500"}`}>{name}</span>
+                      {isLead && <Tag color="blue">Lead</Tag>}
+                    </div>
+                    <Tag color="gray">No log yet</Tag>
                   </div>
-                  <Tag color="gray">No log yet</Tag>
+                );
+                return (
+                  <div key={name} className="flex items-center justify-between py-2.5 border-b border-zinc-800 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${isLead ? "text-emerald-400" : "text-white"}`}>{name}</span>
+                      {isLead && <Tag color="blue">Lead</Tag>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-400 font-mono">{d.beforeNoon}↑ {d.afterNoon}↓</span>
+                      <Tag color={d.total >= 4 ? "green" : d.total >= 3 ? "yellow" : "red"}>{d.total} videos</Tag>
+                      {d.overtime > 0 && <Tag color="yellow">{d.overtime} OT</Tag>}
+                      {d.revisions > 0 && <Tag color="amber">{d.revisions} rev</Tag>}
+                    </div>
+                  </div>
+                );
+              })}
+              {(teamVideoTotal > 0 || teamRevTotal > 0) && (
+                <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
+                  <span className="text-zinc-500">team total</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-emerald-400 font-mono font-bold">{teamVideoTotal} new</span>
+                    <span className="text-zinc-700">·</span>
+                    <span className="text-amber-400 font-mono font-bold">{teamRevTotal} revisions</span>
+                  </div>
                 </div>
-              );
-              return (
-                <div key={name} className="flex items-center justify-between py-2.5 border-b border-zinc-800 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${isLead ? "text-emerald-400" : "text-white"}`}>{name}</span>
-                    {isLead && <Tag color="blue">Lead</Tag>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-400 font-mono">{d.beforeNoon}↑ {d.afterNoon}↓</span>
-                    <Tag color={d.total >= 4 ? "green" : d.total >= 3 ? "yellow" : "red"}>{d.total} videos</Tag>
-                    {d.overtime > 0 && <Tag color="yellow">{d.overtime} OT</Tag>}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        ))}
+              )}
+            </Card>
+          );
+        })}
 
         <div className="grid grid-cols-2 gap-4">
           <Card><Stat label="Before Noon" value={stats.bn} sub="videos" /></Card>
@@ -484,7 +539,10 @@ function Dashboard({ logs, onRefresh, loading, weekOffset, setWeekOffset }) {
               <p className="text-xs text-zinc-500">{d.team} · {d.days} day{d.days !== 1 ? "s" : ""} logged</p>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <Tag color={d.total / d.days >= 4 ? "green" : "yellow"}>{d.total} total</Tag>
+              <div className="flex gap-1.5">
+                <Tag color={d.total / d.days >= 4 ? "green" : "yellow"}>{d.total} total</Tag>
+                {d.revisions > 0 && <Tag color="amber">{d.revisions} rev</Tag>}
+              </div>
               <span className="text-xs text-zinc-500">{(d.total / d.days).toFixed(1)}/day avg</span>
             </div>
           </Card>
