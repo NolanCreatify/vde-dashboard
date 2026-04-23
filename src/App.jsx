@@ -196,8 +196,11 @@ function LogForm({ onSubmit }) {
     if (!form.wins.trim()) return "Wins / Learnings is required.";
     if (!screenshots.length) return "At least one CapCut project screenshot is required.";
     const t = parseInt(form.totalVideos);
-    if ((parseInt(form.beforeNoon) + parseInt(form.afterNoon)) > t)
-      return "Before + after noon can't exceed total videos.";
+    const r = parseInt(form.revisions) || 0;
+    // Time-of-day counts all work done (new videos + revisions)
+    if ((parseInt(form.beforeNoon) + parseInt(form.afterNoon)) > (t + r))
+      return "Before + after noon can't exceed total output (new videos + revisions).";
+    // On-time / OT still apply only to new videos
     if ((parseInt(form.onTime) + parseInt(form.overtime)) > t)
       return "On-time + OT can't exceed total videos.";
     return null;
