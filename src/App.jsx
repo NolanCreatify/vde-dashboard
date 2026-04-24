@@ -143,6 +143,40 @@ const NewBadge = ({ children, className = "" }) => (
   </div>
 );
 
+// Compresses & resizes an image File before base64-encoding it.
+// Reduces a 3–5 MB screenshot to ~100–200 KB — dramatically speeds up upload.
+const compressImage = (file, maxWidth = 1280, quality = 0.72) =>
+  new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => {
+            const r2 = new FileReader();
+            r2.onload = () => resolve({
+              base64: r2.result.split(",")[1],
+              type: "image/jpeg",
+              name: file.name.replace(/\.[^.]+$/, ".jpg"),
+            });
+            r2.readAsDataURL(blob);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
 // ── LOG FORM ───────────────────────────────────────────────────────────────────
 function LogForm({ onSubmit }) {
   const [form, setForm] = useState({
@@ -222,14 +256,9 @@ function LogForm({ onSubmit }) {
       screenshotNames: screenshots.map((s) => s.name).join("|"),
       submittedAt: new Date().toISOString(),
     };
-    // Upload screenshots as base64 (array of files)
+    // Compress screenshots to JPEG before encoding — reduces 4 × ~3 MB to ~4 × ~150 KB.
     if (screenshots.length) {
-      const encoded = await Promise.all(screenshots.map((f) => new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ base64: reader.result.split(",")[1], type: f.type, name: f.name });
-        reader.readAsDataURL(f);
-      })));
-      entry.screenshotsBase64 = encoded;
+      entry.screenshotsBase64 = await Promise.all(screenshots.map((f) => compressImage(f)));
     }
     await onSubmit(entry);
     setSaving(false);
