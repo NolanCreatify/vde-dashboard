@@ -5,10 +5,10 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV
 
 const TEAMS = {
   "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Joma"],
+  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Edmark", "Joma"],
   "Team Emil":    ["Vermil", "Raphael", "Arjel", "Nino", "Emil"],
   "Team Emman":   ["Ryand", "Darell", "Jaycee", "Jayve", "Emman"],
-  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Patrick"],
+  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Sir Daniel", "Rob", "Patrick"],
 };
 
 const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick"];
