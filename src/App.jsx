@@ -273,10 +273,14 @@ function LogForm({ onSubmit }) {
   };
 
   if (submitted) {
+    const displayDate = form.date
+      ? new Date(form.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : "";
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-20">
         <div className="text-5xl">✅</div>
         <p className="text-xl font-bold text-white">Log submitted!</p>
+        {displayDate && <p className="text-emerald-400 text-sm font-medium">{displayDate}</p>}
         <p className="text-zinc-400 text-sm">Great work today. See you tomorrow.</p>
         <button onClick={resetForm} className="mt-2 text-xs text-zinc-500 underline">Submit another entry</button>
       </div>
