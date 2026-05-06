@@ -8,10 +8,11 @@ const TEAMS = {
   "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Edmark", "Lemor", "Joma"],
   "Team Emil":    ["Vermil", "Arjel", "Jaycee", "Ryand", "Emil"],
   "Team Emman":   ["Darell", "Nino", "Jayve", "Raphael", "Emman"],
-  "Team Patrick": ["Justin", "Kino", "Ellenor", "Mark Lim", "Drianna", "Marcus", "Karl", "Vincent", "Gelo", "Larry", "Sir Daniel", "Rob", "Ford", "Johann", "Patrick"],
+  "Team Patrick": ["Justin", "Drianna", "Karl", "Gelo", "Sir Daniel", "Rob", "Johann", "Patrick"],
+  "Team Kino":    ["Mark Lim", "Ellenor", "Vincent", "Marcus", "Larry", "Ford", "Kino"],
 };
 
-const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick"];
+const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick", "Kino"];
 const ALL_MEMBERS = Object.values(TEAMS).flat();
 
 const BLOCKERS_OPTIONS = [
