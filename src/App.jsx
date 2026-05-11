@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV1ZuY4pwCdXNUYcej5Sag7s90K7uyoKiSXH9cqL9kC6o1YMOg9z_X6g/exec";
 
 const TEAMS = {
-  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Vincent C", "Hawkins", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Edmark", "Lemor", "Joma"],
+  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Vincent C", "Hawkins", "Ronamy", "Rog"],
+  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Edmark", "Lemor", "Johnny", "Joma"],
   "Team Emil":    ["Vermil", "Arjel", "Jaycee", "Ryand", "Emil"],
   "Team Emman":   ["Darell", "Nino", "Jayve", "Raphael", "Emman"],
-  "Team Patrick": ["Justin", "Drianna", "Karl", "Gelo", "Sir Daniel", "Rob", "Johann", "Patrick"],
-  "Team Kino":    ["Mark Lim", "Ellenor", "Vincent", "Marcus", "Larry", "Ford", "Kino"],
+  "Team Patrick": ["Justin", "Drianna", "Karl", "Gelo", "Sir Daniel", "Rob", "Johann", "Adelbert", "Patrick"],
+  "Team Kino":    ["Mark Lim", "Ellenor", "Vincent", "Marcus", "Larry", "Ford", "Grant", "Kino"],
 };
 
 const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick", "Kino"];
