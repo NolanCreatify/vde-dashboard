@@ -4,15 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxBXdrbzWWIXpV1ZuY4pwCdXNUYcej5Sag7s90K7uyoKiSXH9cqL9kC6o1YMOg9z_X6g/exec";
 
 const TEAMS = {
-  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Marcel", "Vincent C", "Hawkins", "Ronamy", "Rog"],
-  "Team Joma":    ["Stephen", "Quinn", "Feb", "Vaughn", "Paul", "Kat", "Lhizel", "Joshua", "Edmark", "Lemor", "Johnny", "Joma"],
+  "Team Rog":     ["Jarhem", "Kyle", "Giane", "Fred", "Marc", "Gladys", "Carlo", "Rog"],
+  "Team Joma":    ["Quinn", "Vaughn", "Paul", "Joshua", "Edmark", "Lemor", "Johnny", "Joma"],
+  "Team Kat":     ["Stephen", "Lhizel", "Feb Vincent", "Ronamy", "Vincent C", "Hawkins", "Marcel", "Kat"],
   "Team Emil":    ["Vermil", "Arjel", "Jaycee", "Ryand", "Emil"],
   "Team Emman":   ["Darell", "Nino", "Jayve", "Raphael", "Emman"],
   "Team Patrick": ["Justin", "Drianna", "Karl", "Gelo", "Sir Daniel", "Rob", "Johann", "Adelbert", "Patrick"],
   "Team Kino":    ["Mark Lim", "Ellenor", "Vincent", "Marcus", "Larry", "Ford", "Grant", "Kino"],
 };
 
-const TEAM_LEADS = ["Rog", "Joma", "Emil", "Emman", "Patrick", "Kino"];
+const TEAM_LEADS = ["Rog", "Joma", "Kat", "Emil", "Emman", "Patrick", "Kino"];
 const ALL_MEMBERS = Object.values(TEAMS).flat();
 
 const BLOCKERS_OPTIONS = [
